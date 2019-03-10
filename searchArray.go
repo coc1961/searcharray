@@ -51,14 +51,14 @@ func (a *SearchArray) Set(data []ArrayItem, indexField []string) {
 }
 
 //Find Find
-func (a *SearchArray) Find(querys ...Q) ([]interface{}, error) {
+func (a *SearchArray) Find(querys ...Q) ([]interface{}, []int, error) {
 
 	var ret []int
 
 	for _, q := range querys {
 		index := a.index[q.K]
 		if index == nil {
-			return nil, errors.New("Invalid Index " + q.K)
+			return nil, nil, errors.New("Invalid Index " + q.K)
 		}
 		ind := index.Get(q.V)
 		if ret == nil {
@@ -78,7 +78,35 @@ func (a *SearchArray) Find(querys ...Q) ([]interface{}, error) {
 	for _, i := range ret {
 		res = append(res, a.data[i])
 	}
-	return res, nil
+	return res, ret, nil
+}
+
+//Add Add
+func (a *SearchArray) Add(item ArrayItem) error {
+	a.data = append(a.data, item)
+	ind := len(a.data) - 1
+	for k, i := range a.index {
+		it := item.GetValue(item, k)
+		i.Add(it, ind)
+	}
+	return nil
+}
+
+//Delete delete
+func (a *SearchArray) Delete(ind int) error {
+	if ind < 0 || ind >= len(a.data) {
+		return errors.New("Invalid Record")
+	}
+	dat := a.data[ind]
+	a.data = append(a.data[:ind], a.data[ind+1:]...)
+	var err, err1 error
+	for k, i := range a.index {
+		err1 = i.Delete(dat.GetValue(dat, k), ind)
+		if err1 != nil {
+			err = err1
+		}
+	}
+	return err
 }
 
 //Index index

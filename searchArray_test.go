@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"sort"
 	"testing"
 	"time"
 
@@ -22,7 +21,7 @@ func TestSearchArray_Set(t *testing.T) {
 	sa.Set(data, idx)
 
 	start := time.Now()
-	res, err := sa.Find(
+	res, _, err := sa.Find(
 		sa.Q("Country", "AR"),
 		sa.Q("Issuer", int(1)),
 		sa.Q("Brand", int(5)),
@@ -33,7 +32,7 @@ func TestSearchArray_Set(t *testing.T) {
 	}
 
 	start = time.Now()
-	res, err = sa.Find(
+	res, _, err = sa.Find(
 		sa.Q("Bin", int(290107)),
 	)
 	fmt.Printf("Set Elapsed Time %s, Found Records %d, Total Records %d\n", time.Since(start), len(res), len(data))
@@ -41,37 +40,61 @@ func TestSearchArray_Set(t *testing.T) {
 		t.Errorf("Error Find\n")
 	}
 
-	// Get Bin Index
-	ib := sa.Index("Bin")
+	start = time.Now()
 
-	//Convert to int
-	ints := make([]int, 0, len(ib.Values()))
-	for _, v := range ib.Values() {
-		ints = append(ints, v.(int))
-	}
-
-	//Sort Bins
-	sort.Ints(ints)
-
-	//Search 290107 Bin
-	found := sort.Search(len(ints), func(i int) bool {
-		if ints[i] < 200000 {
-			return false
-		}
-		return true
-	})
-
+	//Find 25000 Bins
 	cont := 0
-	for i := found; i < len(ints); i++ {
-		v := ints[i]
-		if v > 295000 {
-			break
-		}
-		r, _ := sa.Find(sa.Q("Bin", v))
+	for i := 200000; i < 225000; i++ {
+		r, _, _ := sa.Find(sa.Q("Bin", i))
 		cont += len(r)
 	}
 
-	fmt.Println(cont)
+	fmt.Printf("Set Elapsed Time %s, Found Records %d, Total Records %d\n", time.Since(start), cont, len(data))
+
+	if cont != 25000 {
+		t.Errorf("Error Find Bins\n")
+	}
+
+	start = time.Now()
+	var recs []int
+	res, recs, err = sa.Find(
+		sa.Q("Country", "AR"),
+		sa.Q("Issuer", int(1)),
+		sa.Q("Brand", int(5)),
+	)
+	if err != nil || len(res) != 6 {
+		t.Errorf("Error Find\n")
+	}
+
+	sa.Delete(recs[2])
+
+	res, recs, err = sa.Find(
+		sa.Q("Country", "AR"),
+		sa.Q("Issuer", int(1)),
+		sa.Q("Brand", int(5)),
+	)
+	if err != nil || len(res) != 5 {
+		t.Errorf("Error Delete\n")
+	}
+
+	b := &Bin{
+		Bin:     111,
+		Country: "AR",
+		Issuer:  int(1),
+		Brand:   int(5),
+	}
+
+	sa.Add(b)
+
+	res, recs, err = sa.Find(
+		sa.Q("Country", "AR"),
+		sa.Q("Issuer", int(1)),
+		sa.Q("Brand", int(5)),
+	)
+	if err != nil || len(res) != 6 {
+		t.Errorf("Error Delete\n")
+	}
+	fmt.Printf("Set Elapsed Time %s, Found Records %d, Total Records %d\n", time.Since(start), len(res), len(data))
 
 }
 
