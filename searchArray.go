@@ -49,42 +49,16 @@ func (a *SearchArray) read() *internalSearchArray {
 
 func (a *SearchArray) readClone() *internalSearchArray {
 	orig := a.data.Load().(*internalSearchArray)
-	/*
-		data := make([]ArrayItem, len(orig.data))
-		for i := 0; i < len(orig.data); i++ {
-			data[i] = orig.data[i]
-		}
-		kk := make([]string, 0)
-		for k := range orig.index {
-			kk = append(kk, k)
-		}
-
-		ne := NewSearchArray()
-		ne.Set(data, kk)
-		return ne.data.Load().(*internalSearchArray)
-	*/
-
 	dest := internalSearchArray{
 		data:  make([]ArrayItem, len(orig.data)),
 		index: make(map[string]*mapindex.Index),
 	}
 	copier.Copy(&dest.data, &orig.data)
-	/*
-		for i := 0; i < len(orig.data); i++ {
-			dest.data[i] = orig.data[i]
-		}
-	*/
 
 	for k := range orig.index {
 		dest.index[k] = mapindex.NewIndex()
 		dest.index[k].Idx = make(map[mapindex.IndexValue][]int, len(orig.index[k].Idx))
 		copier.Copy(&dest.index[k].Idx, orig.index[k].Idx)
-		/*
-			for k1, v1 := range orig.index[k].Idx {
-				dest.index[k].Idx[k1] = v1
-			}
-		*/
-
 	}
 	return &dest
 
