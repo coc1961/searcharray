@@ -71,6 +71,7 @@ func TestSearchArray_Set(t *testing.T) {
 
 	ch1 := int32(0)
 	ch2 := int32(0)
+	ch3 := int32(0)
 
 	for a := 0; a < 1000; a++ {
 		wg.Add(1)
@@ -81,7 +82,11 @@ func TestSearchArray_Set(t *testing.T) {
 			_ = b
 			_ = c
 			if len(b) > 0 {
-				atomic.AddInt32(&ch1, 1)
+				if atomic.LoadInt32(&ch2) > 0 {
+					atomic.AddInt32(&ch3, 1)
+				} else {
+					atomic.AddInt32(&ch1, 1)
+				}
 			} else {
 				atomic.AddInt32(&ch2, 1)
 			}
@@ -111,6 +116,27 @@ func TestSearchArray_Set(t *testing.T) {
 		Brand:   int(5),
 	}
 
+	for a := 0; a < 100; a++ {
+		wg.Add(1)
+		go func(aa, id int) {
+			time.Sleep(time.Duration(aa) * time.Millisecond)
+			a, b, c := sa.Find(sa.Q("Bin", id))
+			_ = a
+			_ = b
+			_ = c
+			if len(b) > 0 {
+				if atomic.LoadInt32(&ch2) > 0 {
+					atomic.AddInt32(&ch3, 1)
+				} else {
+					atomic.AddInt32(&ch1, 1)
+				}
+			} else {
+				atomic.AddInt32(&ch2, 1)
+			}
+			wg.Done()
+		}(a, (res[2].(*Bin)).Bin)
+	}
+
 	sa.Add(b)
 
 	res, recs, err = sa.Find(
@@ -124,7 +150,7 @@ func TestSearchArray_Set(t *testing.T) {
 
 	end := time.Since(start)
 	wg.Wait()
-	fmt.Printf("Set Elapsed Time %s, Found Records %d, Total Records %d , No Cero %d , Cero %d\n", end, len(res), len(data), ch1, ch2)
+	fmt.Printf("Set Elapsed Time %s, Found Records %d, Total Records %d , No Cero (prev) %d , No Cero (pos)  %d , Cero %d\n", end, len(res), len(data), ch1, ch3, ch2)
 
 }
 
