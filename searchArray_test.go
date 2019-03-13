@@ -118,7 +118,7 @@ func TestSearchArray_Set(t *testing.T) {
 		sa.Q("Brand", int(5)),
 	)
 	if err != nil || len(res) != 6 {
-		t.Errorf("Error Delete\n")
+		t.Errorf("Error Add\n")
 	}
 
 	end := time.Since(start)
