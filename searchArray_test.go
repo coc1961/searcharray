@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -66,7 +68,31 @@ func TestSearchArray_Set(t *testing.T) {
 		t.Errorf("Error Find\n")
 	}
 
+	wg := sync.WaitGroup{}
+
+	ch1 := int32(0)
+	ch2 := int32(0)
+
+	for a := 0; a < 1000; a++ {
+		wg.Add(1)
+		go func(aa, id int) {
+			time.Sleep(time.Duration(aa) * time.Millisecond)
+			a, b, c := sa.Find(sa.Q("Bin", id))
+			_ = a
+			_ = b
+			_ = c
+			if len(b) > 0 {
+				atomic.AddInt32(&ch1, 1)
+			} else {
+				atomic.AddInt32(&ch2, 1)
+			}
+			wg.Done()
+		}(a, (res[2].(*Bin)).Bin)
+	}
+
 	sa.Delete(recs[2])
+
+	time.Sleep(5 * time.Millisecond)
 
 	res, recs, err = sa.Find(
 		sa.Q("Country", "AR"),
@@ -94,7 +120,10 @@ func TestSearchArray_Set(t *testing.T) {
 	if err != nil || len(res) != 6 {
 		t.Errorf("Error Delete\n")
 	}
-	fmt.Printf("Set Elapsed Time %s, Found Records %d, Total Records %d\n", time.Since(start), len(res), len(data))
+
+	end := time.Since(start)
+	wg.Wait()
+	fmt.Printf("Set Elapsed Time %s, Found Records %d, Total Records %d , No Cero %d , Cero %d\n", end, len(res), len(data), ch1, ch2)
 
 }
 
