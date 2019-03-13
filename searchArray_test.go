@@ -57,7 +57,6 @@ func TestSearchArray_Set(t *testing.T) {
 		t.Errorf("Error Find Bins\n")
 	}
 
-	start = time.Now()
 	var recs []int
 	res, recs, err = sa.Find(
 		sa.Q("Country", "AR"),
@@ -90,9 +89,11 @@ func TestSearchArray_Set(t *testing.T) {
 		}(a, (res[2].(*Bin)).Bin)
 	}
 
-	sa.Delete(recs[2])
+	time.Sleep(300 * time.Millisecond)
 
-	time.Sleep(5 * time.Millisecond)
+	start = time.Now()
+
+	sa.Delete(recs[2])
 
 	res, recs, err = sa.Find(
 		sa.Q("Country", "AR"),

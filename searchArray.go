@@ -77,10 +77,13 @@ func (a *SearchArray) readClone() *internalSearchArray {
 
 	for k := range orig.index {
 		dest.index[k] = mapindex.NewIndex()
-		//copier.Copy(&dest.index[k].Idx, orig.index[k].Idx)
-		for k1, v1 := range orig.index[k].Idx {
-			dest.index[k].Idx[k1] = v1
-		}
+		dest.index[k].Idx = make(map[mapindex.IndexValue][]int, len(orig.index[k].Idx))
+		copier.Copy(&dest.index[k].Idx, orig.index[k].Idx)
+		/*
+			for k1, v1 := range orig.index[k].Idx {
+				dest.index[k].Idx[k1] = v1
+			}
+		*/
 
 	}
 	return &dest
