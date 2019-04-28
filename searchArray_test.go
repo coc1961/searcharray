@@ -10,8 +10,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/coc1961/mapindex"
 	"github.com/coc1961/searcharray"
+	"github.com/coc1961/searcharray/mapindex"
 )
 
 func TestSearchArray_Set(t *testing.T) {
@@ -163,8 +163,8 @@ type Bin struct {
 	Country string
 }
 
-func (a *Bin) GetValue(item interface{}, indexField string) mapindex.IndexValue {
-	bin := item.(*Bin)
+func (a *Bin) GetValue(indexField string) mapindex.IndexValue {
+	bin := a
 	switch indexField {
 	case "Bin":
 		return mapindex.IndexValue(bin.Bin)

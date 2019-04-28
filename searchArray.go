@@ -5,9 +5,8 @@ import (
 	"sync"
 	"sync/atomic"
 
+	"github.com/coc1961/searcharray/mapindex"
 	"github.com/jinzhu/copier"
-
-	"github.com/coc1961/mapindex"
 )
 
 //NewSearchArray NewSearchArray
@@ -23,7 +22,7 @@ func NewSearchArray() *SearchArray {
 
 //ArrayItem ArrayItem
 type ArrayItem interface {
-	GetValue(item interface{}, indexField string) mapindex.IndexValue
+	GetValue(indexField string) mapindex.IndexValue
 }
 
 //Q query
@@ -82,7 +81,7 @@ func (a *SearchArray) Set(data []ArrayItem, indexField []string) {
 	i := 0
 	for _, d := range data {
 		for _, s := range indexField {
-			aData.index[s].Add(d.GetValue(d, s), i)
+			aData.index[s].Add(d.GetValue(s), i)
 		}
 		i++
 	}
@@ -129,7 +128,7 @@ func (a *SearchArray) Add(item ArrayItem) error {
 	aData.data = append(aData.data, item)
 	ind := len(aData.data) - 1
 	for k, i := range aData.index {
-		it := item.GetValue(item, k)
+		it := item.GetValue(k)
 		i.Add(it, ind)
 	}
 	a.insert(aData)
@@ -149,7 +148,7 @@ func (a *SearchArray) Delete(ind int) error {
 	aData.data = append(aData.data[:ind], aData.data[ind+1:]...)
 	var err, err1 error
 	for k, i := range aData.index {
-		err1 = i.Delete(dat.GetValue(dat, k), ind)
+		err1 = i.Delete(dat.GetValue(k), ind)
 		if err1 != nil {
 			err = err1
 		}
