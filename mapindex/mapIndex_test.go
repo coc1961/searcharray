@@ -17,16 +17,24 @@ func TestNewIndex(t *testing.T) {
 	arr := make([]mapindex.IndexValue, 300000)
 
 	var value mapindex.IndexValue
+	var value1 mapindex.IndexValue
 	for i := 0; i < len(arr); i++ {
 		v := RandStringRunes(2)
 		arr[i] = v
 		idx.Add(v, i)
 		if value == nil {
 			value = v
+		} else if value1 == nil {
+			value1 = v
 		}
+
 	}
 
 	if len(idx.Get(mapindex.IndexValue(value))) < 1 {
+		t.Errorf("Error Find\n")
+	}
+
+	if len(idx.Get(mapindex.IndexValue([]interface{}{value, value1}))) <= len(idx.Get(mapindex.IndexValue(value))) {
 		t.Errorf("Error Find\n")
 	}
 
