@@ -20,9 +20,11 @@ func TestSearchArray_Set(t *testing.T) {
 	sa := searcharray.NewSearchArray()
 	idx := []string{"Bin", "Segment", "Brand", "Issuer", "Country"}
 
-	sa.Set(data, idx)
-
 	start := time.Now()
+	sa.Set(data, idx)
+	fmt.Printf("Set Data Elapsed Time %s\n", time.Since(start))
+
+	start = time.Now()
 	res, _, err := sa.Find(
 		sa.Q("Country", "AR"),
 		sa.Q("Issuer", int(1)),

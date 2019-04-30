@@ -73,18 +73,28 @@ func (a *SearchArray) Set(data []ArrayItem, indexField []string) {
 	aData.data = data
 	aData.index = make(map[string]*mapindex.Index)
 
-	for _, s := range indexField {
+	ind := newIndexer(data, indexField)
+	for _, i := range ind {
 		idx := mapindex.NewIndex()
-		aData.index[s] = idx
+		idx.Idx = i.Index
+		aData.index[i.Name] = idx
 	}
 
-	i := 0
-	for _, d := range data {
+	//	Viejo Código
+	/*
 		for _, s := range indexField {
-			aData.index[s].Add(d.GetValue(s), i)
+			idx := mapindex.NewIndex()
+			aData.index[s] = idx
 		}
-		i++
-	}
+
+		i := 0
+		for _, d := range data {
+			for _, s := range indexField {
+				aData.index[s].Add(d.GetValue(s), i)
+			}
+			i++
+		}
+	*/
 }
 
 //Find Find
