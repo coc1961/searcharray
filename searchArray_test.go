@@ -18,11 +18,13 @@ func TestSearchArray_Set(t *testing.T) {
 	data := ReadDataAsObject()
 	res := make([]*Bin, 0)
 
+	//Funcion que recibe los resultados
 	fnAppendResult := func(i int) error {
 		res = append(res, data[i])
 		return nil
 	}
 
+	//Funcion que obtiene un atributo del objeto
 	fnGetFieldValue := func(ind int, indexField string) mapindex.IndexValue {
 		bin := data[ind]
 		switch indexField {

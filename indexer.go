@@ -52,9 +52,8 @@ func newIndexer(fn func(ind int, indexField string) mapindex.IndexValue, len int
 }
 
 type wrap struct {
-	fn         func(ind int, indexField string) mapindex.IndexValue
-	index      int
-	indexField string
+	fn    func(ind int, indexField string) mapindex.IndexValue
+	index int
 }
 
 func (w wrap) GetValue(indexField string) mapindex.IndexValue {
