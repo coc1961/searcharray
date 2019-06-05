@@ -2,21 +2,17 @@ package searcharray
 
 import (
 	"errors"
-	"sync"
-	"sync/atomic"
 
 	"github.com/coc1961/searcharray/mapindex"
-	"github.com/jinzhu/copier"
 )
 
 //NewSearchArray NewSearchArray
 func NewSearchArray() *SearchArray {
 	internal := internalSearchArray{
-		data:  make([]ArrayItem, 0),
 		index: make(map[string]*mapindex.Index),
 	}
 	arr := SearchArray{}
-	arr.data.Store(&internal)
+	arr.data = &internal
 	return &arr
 }
 
@@ -33,44 +29,20 @@ type Q struct {
 
 //SearchArray SearchArray
 type SearchArray struct {
-	mu   sync.Mutex
-	data atomic.Value
+	data *internalSearchArray
 }
 
 type internalSearchArray struct {
-	data  []ArrayItem
 	index map[string]*mapindex.Index
 }
 
 func (a *SearchArray) read() *internalSearchArray {
-	return a.data.Load().(*internalSearchArray)
-}
-
-func (a *SearchArray) readClone() *internalSearchArray {
-	orig := a.data.Load().(*internalSearchArray)
-	dest := internalSearchArray{
-		data:  make([]ArrayItem, len(orig.data)),
-		index: make(map[string]*mapindex.Index),
-	}
-	copier.Copy(&dest.data, &orig.data)
-
-	for k := range orig.index {
-		dest.index[k] = mapindex.NewIndex()
-		dest.index[k].Idx = make(map[mapindex.IndexValue][]int, len(orig.index[k].Idx))
-		copier.Copy(&dest.index[k].Idx, orig.index[k].Idx)
-	}
-	return &dest
-
-}
-
-func (a *SearchArray) insert(arr *internalSearchArray) {
-	a.data.Store(arr)
+	return a.data
 }
 
 //Set set
 func (a *SearchArray) Set(data []ArrayItem, indexField []string) {
 	aData := a.read()
-	aData.data = data
 	aData.index = make(map[string]*mapindex.Index)
 
 	ind := newIndexer(data, indexField)
@@ -98,7 +70,7 @@ func (a *SearchArray) Set(data []ArrayItem, indexField []string) {
 }
 
 //Find Find
-func (a *SearchArray) Find(querys ...Q) ([]interface{}, []int, error) {
+func (a *SearchArray) Find(fn func(int) error, querys ...Q) ([]int, error) {
 	aData := a.read()
 
 	var ret []int
@@ -106,7 +78,7 @@ func (a *SearchArray) Find(querys ...Q) ([]interface{}, []int, error) {
 	for _, q := range querys {
 		index := aData.index[q.K]
 		if index == nil {
-			return nil, nil, errors.New("Invalid Index " + q.K)
+			return nil, errors.New("Invalid Index " + q.K)
 		}
 		ind := index.Get(q.V)
 		if ret == nil {
@@ -121,50 +93,14 @@ func (a *SearchArray) Find(querys ...Q) ([]interface{}, []int, error) {
 	if ret == nil {
 		ret = make([]int, 0)
 	}
-
-	res := make([]interface{}, 0, len(ret))
-	for _, i := range ret {
-		res = append(res, aData.data[i])
-	}
-	return res, ret, nil
-}
-
-//Add Add
-func (a *SearchArray) Add(item ArrayItem) error {
-	a.mu.Lock()
-	defer a.mu.Unlock()
-	aData := a.readClone()
-
-	aData.data = append(aData.data, item)
-	ind := len(aData.data) - 1
-	for k, i := range aData.index {
-		it := item.GetValue(k)
-		i.Add(it, ind)
-	}
-	a.insert(aData)
-	return nil
-}
-
-//Delete delete
-func (a *SearchArray) Delete(ind int) error {
-	a.mu.Lock()
-	defer a.mu.Unlock()
-	aData := a.readClone()
-
-	if ind < 0 || ind >= len(aData.data) {
-		return errors.New("Invalid Record")
-	}
-	dat := aData.data[ind]
-	aData.data = append(aData.data[:ind], aData.data[ind+1:]...)
-	var err, err1 error
-	for k, i := range aData.index {
-		err1 = i.Delete(dat.GetValue(k), ind)
-		if err1 != nil {
-			err = err1
+	if fn != nil {
+		for _, r := range ret {
+			if err := fn(r); err != nil {
+				return nil, err
+			}
 		}
 	}
-	a.insert(aData)
-	return err
+	return ret, nil
 }
 
 //Index index

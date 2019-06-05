@@ -28,7 +28,7 @@ func main(){
 
     var myArray []*TestStruct
     myArray=....
-
+    
     //initialize the searcharray structure
     sa := searcharray.NewSearchArray()
 
@@ -39,7 +39,7 @@ func main(){
     sa.Set(data, idx)
 
     //I look for the records according to the filter 
-    res, _, err := sa.Find(
+    res, _, err := sa.Find( func (i int) error { fmt.Print("Record found",data[i]); return nil }
         sa.Q("Field1", "Hello"),
         sa.Q("Field2", 20),
     )

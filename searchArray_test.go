@@ -25,7 +25,8 @@ func TestSearchArray_Set(t *testing.T) {
 	fmt.Printf("Set Data Elapsed Time %s\n", time.Since(start))
 
 	start = time.Now()
-	res, _, err := sa.Find(
+	res := make([]*Bin, 0)
+	_, err := sa.Find(func(i int) error { res = append(res, data[i].(*Bin)); return nil },
 		sa.Q("Country", "AR"),
 		sa.Q("Issuer", int(1)),
 		sa.Q("Brand", int(5)),
@@ -36,7 +37,8 @@ func TestSearchArray_Set(t *testing.T) {
 	}
 
 	start = time.Now()
-	res, _, err = sa.Find(
+	res = make([]*Bin, 0)
+	_, err = sa.Find(func(i int) error { res = append(res, data[i].(*Bin)); return nil },
 		sa.Q("Bin", int(290107)),
 	)
 	fmt.Printf("Set Elapsed Time %s, Found Records %d, Total Records %d\n", time.Since(start), len(res), len(data))
@@ -48,8 +50,9 @@ func TestSearchArray_Set(t *testing.T) {
 
 	//Find 25000 Bins
 	cont := 0
+	res = make([]*Bin, 0)
 	for i := 200000; i < 225000; i++ {
-		r, _, _ := sa.Find(sa.Q("Bin", i))
+		r, _ := sa.Find(func(i int) error { res = append(res, data[i].(*Bin)); return nil }, sa.Q("Bin", i))
 		cont += len(r)
 	}
 
@@ -59,8 +62,8 @@ func TestSearchArray_Set(t *testing.T) {
 		t.Errorf("Error Find Bins\n")
 	}
 
-	var recs []int
-	res, recs, err = sa.Find(
+	res = make([]*Bin, 0)
+	_, err = sa.Find(func(i int) error { res = append(res, data[i].(*Bin)); return nil },
 		sa.Q("Country", "AR"),
 		sa.Q("Issuer", int(1)),
 		sa.Q("Brand", int(5)),
@@ -79,7 +82,8 @@ func TestSearchArray_Set(t *testing.T) {
 		wg.Add(1)
 		go func(aa, id int) {
 			time.Sleep(time.Duration(aa) * time.Millisecond)
-			a, b, c := sa.Find(sa.Q("Bin", id))
+			a := make([]*Bin, 0)
+			b, c := sa.Find(func(i int) error { res = append(res, data[i].(*Bin)); return nil }, sa.Q("Bin", id))
 			_ = a
 			_ = b
 			_ = c
@@ -93,36 +97,18 @@ func TestSearchArray_Set(t *testing.T) {
 				atomic.AddInt32(&ch2, 1)
 			}
 			wg.Done()
-		}(a, (res[2].(*Bin)).Bin)
+		}(a, res[2].Bin)
 	}
 
 	time.Sleep(300 * time.Millisecond)
 
 	start = time.Now()
 
-	sa.Delete(recs[2])
-
-	res, recs, err = sa.Find(
-		sa.Q("Country", "AR"),
-		sa.Q("Issuer", int(1)),
-		sa.Q("Brand", int(5)),
-	)
-	if err != nil || len(res) != 5 {
-		t.Errorf("Error Delete\n")
-	}
-
-	b := &Bin{
-		Bin:     111,
-		Country: "AR",
-		Issuer:  int(1),
-		Brand:   int(5),
-	}
-
 	for a := 0; a < 100; a++ {
 		wg.Add(1)
 		go func(aa, id int) {
 			time.Sleep(time.Duration(aa) * time.Millisecond)
-			a, b, c := sa.Find(sa.Q("Bin", id))
+			b, c := sa.Find(nil, sa.Q("Bin", id))
 			_ = a
 			_ = b
 			_ = c
@@ -136,18 +122,7 @@ func TestSearchArray_Set(t *testing.T) {
 				atomic.AddInt32(&ch2, 1)
 			}
 			wg.Done()
-		}(a, (res[2].(*Bin)).Bin)
-	}
-
-	sa.Add(b)
-
-	res, recs, err = sa.Find(
-		sa.Q("Country", "AR"),
-		sa.Q("Issuer", int(1)),
-		sa.Q("Brand", int(5)),
-	)
-	if err != nil || len(res) != 6 {
-		t.Errorf("Error Add\n")
+		}(a, res[2].Bin)
 	}
 
 	end := time.Since(start)
