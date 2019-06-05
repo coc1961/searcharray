@@ -41,11 +41,11 @@ func (a *SearchArray) read() *internalSearchArray {
 }
 
 //Set set
-func (a *SearchArray) Set(data []ArrayItem, indexField []string) {
+func (a *SearchArray) Set(fn func(ind int, indexField string) mapindex.IndexValue, len int, indexField []string) {
 	aData := a.read()
 	aData.index = make(map[string]*mapindex.Index)
 
-	ind := newIndexer(data, indexField)
+	ind := newIndexer(fn, len, indexField)
 	for _, i := range ind {
 		idx := mapindex.NewIndex()
 		idx.Idx = i.Index

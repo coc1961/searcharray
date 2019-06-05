@@ -7,14 +7,14 @@ import (
 )
 
 //Newindexer indexer
-func newIndexer(lst []ArrayItem, fields []string) []outIndex {
+func newIndexer(fn func(ind int, indexField string) mapindex.IndexValue, len int, fields []string) []outIndex {
 
 	// Creo los chan y conecto los flujos a través de ellos
-	Index1 := make([]chan outIndex, 0, len(fields))
-	AllIndex := make(chan []outIndex, len(fields))
+	Index1 := make([]chan outIndex, 0, len)
+	AllIndex := make(chan []outIndex, len)
 
-	Bins := make(chan []ArrayItem)
-	LIndex1 := make([]chan register, 0, len(fields))
+	Bins := make(chan ArrayItem)
+	LIndex1 := make([]chan register, 0, len)
 
 	for _, s := range fields {
 		tmp := make(chan register, 10000)
@@ -43,10 +43,26 @@ func newIndexer(lst []ArrayItem, fields []string) []outIndex {
 	indexJoiner.Process()
 	loader.Process()
 
-	Bins <- lst
+	for b := 0; b < len; b++ {
+		Bins <- toArrayItem(fn, b)
+	}
 	close(Bins)
 	ret := <-AllIndex
 	return ret
+}
+
+type wrap struct {
+	fn         func(ind int, indexField string) mapindex.IndexValue
+	index      int
+	indexField string
+}
+
+func (w wrap) GetValue(indexField string) mapindex.IndexValue {
+	return w.fn(w.index, indexField)
+}
+
+func toArrayItem(fn func(ind int, indexField string) mapindex.IndexValue, index int) ArrayItem {
+	return wrap{fn: fn, index: index}
 }
 
 //indexJoiner loader
@@ -98,7 +114,7 @@ func (i *indexJoiner) Process() {
 
 //loader loader
 type loader struct {
-	Bins  <-chan []ArrayItem
+	Bins  <-chan ArrayItem
 	Index []chan register
 }
 
@@ -106,6 +122,7 @@ type loader struct {
 func (i *loader) Process() {
 	indexLog("loader starts.")
 	go func() {
+		ix := 0
 		for {
 			bins, ok := <-i.Bins
 			if !ok {
@@ -115,11 +132,10 @@ func (i *loader) Process() {
 				}
 				return
 			}
-			for ix := 0; ix < len(bins); ix++ {
-				for _, i := range i.Index {
-					i <- register{Row: ix, Bin: bins[ix]}
-				}
+			for _, i := range i.Index {
+				i <- register{Row: ix, Bin: bins}
 			}
+			ix++
 		}
 	}()
 }

@@ -16,17 +16,39 @@ import (
 
 func TestSearchArray_Set(t *testing.T) {
 	data := ReadDataAsObject()
+	res := make([]*Bin, 0)
+
+	fnAppendResult := func(i int) error {
+		res = append(res, data[i])
+		return nil
+	}
+
+	fnGetFieldValue := func(ind int, indexField string) mapindex.IndexValue {
+		bin := data[ind]
+		switch indexField {
+		case "Bin":
+			return mapindex.IndexValue(bin.Bin)
+		case "Segment":
+			return mapindex.IndexValue(bin.Segment)
+		case "Brand":
+			return mapindex.IndexValue(bin.Brand)
+		case "Issuer":
+			return mapindex.IndexValue(bin.Issuer)
+		case "Country":
+			return mapindex.IndexValue(bin.Country)
+		}
+		return mapindex.IndexValue(nil)
+	}
 
 	sa := searcharray.NewSearchArray()
 	idx := []string{"Bin", "Segment", "Brand", "Issuer", "Country"}
 
 	start := time.Now()
-	sa.Set(data, idx)
+	sa.Set(fnGetFieldValue, len(data), idx)
 	fmt.Printf("Set Data Elapsed Time %s\n", time.Since(start))
 
 	start = time.Now()
-	res := make([]*Bin, 0)
-	_, err := sa.Find(func(i int) error { res = append(res, data[i].(*Bin)); return nil },
+	_, err := sa.Find(fnAppendResult,
 		sa.Q("Country", "AR"),
 		sa.Q("Issuer", int(1)),
 		sa.Q("Brand", int(5)),
@@ -38,7 +60,7 @@ func TestSearchArray_Set(t *testing.T) {
 
 	start = time.Now()
 	res = make([]*Bin, 0)
-	_, err = sa.Find(func(i int) error { res = append(res, data[i].(*Bin)); return nil },
+	_, err = sa.Find(fnAppendResult,
 		sa.Q("Bin", int(290107)),
 	)
 	fmt.Printf("Set Elapsed Time %s, Found Records %d, Total Records %d\n", time.Since(start), len(res), len(data))
@@ -52,7 +74,7 @@ func TestSearchArray_Set(t *testing.T) {
 	cont := 0
 	res = make([]*Bin, 0)
 	for i := 200000; i < 225000; i++ {
-		r, _ := sa.Find(func(i int) error { res = append(res, data[i].(*Bin)); return nil }, sa.Q("Bin", i))
+		r, _ := sa.Find(fnAppendResult, sa.Q("Bin", i))
 		cont += len(r)
 	}
 
@@ -63,7 +85,7 @@ func TestSearchArray_Set(t *testing.T) {
 	}
 
 	res = make([]*Bin, 0)
-	_, err = sa.Find(func(i int) error { res = append(res, data[i].(*Bin)); return nil },
+	_, err = sa.Find(fnAppendResult,
 		sa.Q("Country", "AR"),
 		sa.Q("Issuer", int(1)),
 		sa.Q("Brand", int(5)),
@@ -83,7 +105,7 @@ func TestSearchArray_Set(t *testing.T) {
 		go func(aa, id int) {
 			time.Sleep(time.Duration(aa) * time.Millisecond)
 			a := make([]*Bin, 0)
-			b, c := sa.Find(func(i int) error { res = append(res, data[i].(*Bin)); return nil }, sa.Q("Bin", id))
+			b, c := sa.Find(fnAppendResult, sa.Q("Bin", id))
 			_ = a
 			_ = b
 			_ = c
@@ -140,25 +162,8 @@ type Bin struct {
 	Country string
 }
 
-func (a *Bin) GetValue(indexField string) mapindex.IndexValue {
-	bin := a
-	switch indexField {
-	case "Bin":
-		return mapindex.IndexValue(bin.Bin)
-	case "Segment":
-		return mapindex.IndexValue(bin.Segment)
-	case "Brand":
-		return mapindex.IndexValue(bin.Brand)
-	case "Issuer":
-		return mapindex.IndexValue(bin.Issuer)
-	case "Country":
-		return mapindex.IndexValue(bin.Country)
-	}
-	return mapindex.IndexValue(nil)
-}
-
 //ReadDataAsObject datos como estructura
-func ReadDataAsObject() []searcharray.ArrayItem {
+func ReadDataAsObject() []*Bin {
 	//fmt.Println("Iniciando Lectura de Json")
 	jsonFile, err := os.Open("test/data.json")
 	if err != nil {
@@ -174,7 +179,7 @@ func ReadDataAsObject() []searcharray.ArrayItem {
 		return nil
 	}
 
-	rt := make([]searcharray.ArrayItem, 0, len(data))
+	rt := make([]*Bin, 0, len(data))
 	for i := 0; i < len(data); i++ {
 		data[i].Bin = i + 200000
 		rt = append(rt, &data[i])
