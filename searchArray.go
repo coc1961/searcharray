@@ -16,6 +16,12 @@ func NewSearchArray() *SearchArray {
 	return &arr
 }
 
+//FnGetFieldValue obtiene el valor de i¡un campo
+type FnGetFieldValue func(ind int, indexField string) mapindex.IndexValue
+
+//FnResult recibe un registro encontrado
+type FnResult func(int) error
+
 //ArrayItem ArrayItem
 type ArrayItem interface {
 	GetValue(indexField string) mapindex.IndexValue
@@ -41,7 +47,7 @@ func (a *SearchArray) read() *internalSearchArray {
 }
 
 //Set set
-func (a *SearchArray) Set(fn func(ind int, indexField string) mapindex.IndexValue, len int, indexField []string) {
+func (a *SearchArray) Set(fn FnGetFieldValue, len int, indexField []string) {
 	aData := a.read()
 	aData.index = make(map[string]*mapindex.Index)
 
@@ -70,7 +76,7 @@ func (a *SearchArray) Set(fn func(ind int, indexField string) mapindex.IndexValu
 }
 
 //Find Find
-func (a *SearchArray) Find(fn func(int) error, querys ...Q) ([]int, error) {
+func (a *SearchArray) Find(fn FnResult, querys ...Q) ([]int, error) {
 	aData := a.read()
 
 	var ret []int

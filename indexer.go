@@ -7,7 +7,7 @@ import (
 )
 
 //Newindexer indexer
-func newIndexer(fn func(ind int, indexField string) mapindex.IndexValue, len int, fields []string) []outIndex {
+func newIndexer(fn FnGetFieldValue, len int, fields []string) []outIndex {
 
 	// Creo los chan y conecto los flujos a través de ellos
 	Index1 := make([]chan outIndex, 0, len)
@@ -52,7 +52,7 @@ func newIndexer(fn func(ind int, indexField string) mapindex.IndexValue, len int
 }
 
 type wrap struct {
-	fn    func(ind int, indexField string) mapindex.IndexValue
+	fn    FnGetFieldValue
 	index int
 }
 
@@ -60,7 +60,7 @@ func (w wrap) GetValue(indexField string) mapindex.IndexValue {
 	return w.fn(w.index, indexField)
 }
 
-func toArrayItem(fn func(ind int, indexField string) mapindex.IndexValue, index int) ArrayItem {
+func toArrayItem(fn FnGetFieldValue, index int) ArrayItem {
 	return wrap{fn: fn, index: index}
 }
 
