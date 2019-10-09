@@ -2,6 +2,7 @@ package searcharray
 
 import (
 	"errors"
+	"sort"
 
 	"github.com/coc1961/searcharray/mapindex"
 )
@@ -57,23 +58,13 @@ func (a *SearchArray) Set(fn FnGetFieldValue, len int, indexField []string) {
 		idx.Idx = i.Index
 		aData.index[i.Name] = idx
 	}
-
-	//	Viejo Código
-	/*
-		for _, s := range indexField {
-			idx := mapindex.NewIndex()
-			aData.index[s] = idx
-		}
-
-		i := 0
-		for _, d := range data {
-			for _, s := range indexField {
-				aData.index[s].Add(d.GetValue(s), i)
-			}
-			i++
-		}
-	*/
 }
+
+type arraySort [][]int
+
+func (a arraySort) Len() int           { return len(a) }
+func (a arraySort) Less(i, j int) bool { return len(a[i]) < len(a[j]) }
+func (a arraySort) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 
 //Find Find
 func (a *SearchArray) Find(fn FnResult, querys ...Q) ([]int, error) {
@@ -81,12 +72,21 @@ func (a *SearchArray) Find(fn FnResult, querys ...Q) ([]int, error) {
 
 	var ret []int
 
+	records := make([][]int, 0)
+
 	for _, q := range querys {
 		index := aData.index[q.K]
 		if index == nil {
 			return nil, errors.New("Invalid Index " + q.K)
 		}
 		ind := index.Get(q.V)
+
+		records = append(records, ind)
+	}
+
+	sort.Sort(arraySort(records))
+
+	for _, ind := range records {
 		if ret == nil {
 			ret = ind
 			continue
@@ -96,6 +96,7 @@ func (a *SearchArray) Find(fn FnResult, querys ...Q) ([]int, error) {
 			break
 		}
 	}
+
 	if ret == nil {
 		ret = make([]int, 0)
 	}
