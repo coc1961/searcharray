@@ -132,10 +132,7 @@ func TestSearchArray_Set(t *testing.T) {
 		wg.Add(1)
 		go func(aa, id int) {
 			time.Sleep(time.Duration(aa) * time.Millisecond)
-			b, c := sa.Find(nil, sa.Q("Bin", id))
-			_ = a
-			_ = b
-			_ = c
+			b, _ := sa.Find(nil, sa.Q("Bin", id))
 			if len(b) > 0 {
 				if atomic.LoadInt32(&ch2) > 0 {
 					atomic.AddInt32(&ch3, 1)
